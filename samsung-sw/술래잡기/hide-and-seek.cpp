@@ -91,10 +91,8 @@ void init(){
    int jj = pc;
    int ptr=1;
    adj[ii][jj] = ptr;
-   //cout << pr << ","<< pc <<'\n';
    ptr++;
    police_move.push_back({ii, jj});
-   //police_dir.push_back(0); //상우하좌
    while(1){
       if(idx % 2 == 1){ //홀수
          for(int dd=0; dd<2; dd++){
@@ -129,11 +127,8 @@ void init(){
          }
          if(is_end) break;
          idx++;
-      }
-
-      
+      }  
    }
-
 }
 
 int check_distance(runner& r){
@@ -153,20 +148,16 @@ void run_runner(){
       if(r.is_catch) continue;
       if(check_distance(r) > 3) continue;
       int ny,nx;
-      //cout << r.r << "," << r.c << " >> ";
       tie(ny,nx) = get_rmove(r);
       if(ny<0 || nx<0 || ny>=n || nx>=n){
-         //cout << "change d!!! " << ny <<"," << nx <<'\n';
          r.d = -r.d;
          tie(ny,nx) = get_rmove(r);
-         //cout << " >> " << ny <<"," << nx <<'\n';
       }
       if(ny == police_move[pi].first && nx == police_move[pi].second){
          continue; //술래 있으면 움직이지않는다
       }
       r.r = ny;
       r.c = nx;
-      //cout << r.r << "," << r.c << "\n";
    }
    return;
 }
@@ -178,16 +169,12 @@ void run_police(int turn){
 
    pi++;
    if(pi >= police_move.size()){ //끝에 도달하면 뒤집어서 가기
-      //cout << "max vector \n";
       reverse(police_move.begin(), police_move.end());
       reverse(police_dir.begin(), police_dir.end());
       back_check == false ? back_check = true : back_check = false;
       pi = 1;
    }
-   // for(auto tmp : police_move){
-   //    cout << tmp.first << "," << tmp.second << '\n';
-   // }
-   //cout << "test1\n";
+
    int ii = police_move[pi].first;
    int jj = police_move[pi].second;
    int d=0;
@@ -201,10 +188,7 @@ void run_police(int turn){
       d = police_dir[pi];
       if(back_check) d = (d+2) % 4; //상우하좌니깐 2더한걸 4로 나머지하면 됨
    }
-   //cout << "test2\n";
-   
-   //db_map();
-   //cout << "d : " << d << '\n';
+
    bool checker = true; 
    for(tree& t : trees){
       if(t.r == ii && t.c == jj){
@@ -224,7 +208,6 @@ void run_police(int turn){
    for(int i=0; i<2; i++){
       int ny = ii + dy[d];
       int nx = jj + dx[d];
-      //cout << ny << "," << nx <<'\n';
       if(ny<0 || nx<0 || ny>=n || nx>=n) break;
       ii = ny;
       jj = nx;
@@ -249,17 +232,10 @@ void run_police(int turn){
    return;
 }
 int main(){
-   
    init();
-   //db_police();
    for(int t=1; t<=k; t++){
-    
       run_runner();
-      //db_map();
       run_police(t);
-      //db_map();
-      //return 0;
-      //cout << t << " : turn , score : " <<  score << '\n';
    }
    
    cout << score;
