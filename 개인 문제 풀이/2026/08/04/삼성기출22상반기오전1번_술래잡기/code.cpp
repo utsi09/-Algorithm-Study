@@ -36,36 +36,7 @@ vector<tree> trees;
 vector<pair<int,int>> police_move;
 vector<int> police_dir;
 
-void db_police(){
-   cout << "---- p map ----\n";
-   for(int i=0; i<n; i++){
-      for(int j=0; j<n; j++){
-         cout << setw(3) << adj[i][j] << " ";
-      }
-      cout << '\n';
-   }
-}
-void db_map(){
-   cout << "---- map ----\n";
-   for(int i=0; i<n; i++){
-      for(int j=0; j<n; j++){
-         if(police_move[pi].first == i && police_move[pi].second == j){
-            cout << "P ";
-            continue;
-         }
-         bool checker = false;
-         for(runner& r : runners){
-            if(r.r == i && r.c == j){
-               cout << "R ";
-               checker = true;
-               break;
-            }
-         }
-         if(!checker) cout << "0 ";
-      }
-      cout << '\n';
-   }
-}
+
 void init(){
    cin >> n >> m >> h >> k;
    pr = n/2;
