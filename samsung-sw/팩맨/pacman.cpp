@@ -2,35 +2,36 @@
 using namespace std;
 int m, t;
 int pr, pc;
+
 int my[8] = {-1,-1,0,1,1,1,0,-1};
 int mx[8] = {0,-1,-1,-1,0,1,1,1};
 
-int py[4] = {-1,0,1,0}; //상좌하우
-int px[4] = {0,-1,0,1};
-int visited[5][5];
+int py[4] = {-1,0,1,0}; // 상-좌-하-우
+int px[4] = {0,-1,0,1}; // 상-좌-하-우
 
-int dead[4][4];        // 시체 남은 턴
-int cnt_map[4][4];      // 현재 칸별 살아있는 몬스터 수
+int dead[5][5]; //칸에 시체 남은 턴수
+int cnt_map[5][5]; //칸에 살아있는 몬스터 수
+
+int best_catch = 0;
+int best_cost = 999;
 
 struct monster{
-    int r,c;
+    int r, c;
     int d;
     bool is_egg = false;
-    int is_died = 0; //시체 있음
-    bool will_eat = false;
-    bool is_deleted = false; //시체도 없어짐
+    bool is_deleted = false;
 };
 vector<monster> monsters;
 
-int max_catch = 0;
-int best_cost = 0;
 
 void db_map(){
+
+    cout << "------- map ------\n";
     for(int i=0; i<4; i++){
         for(int j=0; j<4; j++){
             bool checker = false;
             for(const monster& m : monsters){
-                if(!m.is_deleted && !m.is_egg && !m.is_died){
+                if(!m.is_egg && !m.is_deleted){
                     if(m.r == i && m.c == j){
                         cout << "M ";
                         checker = true;
@@ -38,16 +39,18 @@ void db_map(){
                     }
                 }
             }
-            if(i == pr && j == pc){
+            if(pr == i && pc == j){
                 cout << "P ";
-                checker =true;
+                checker = true;
             }
             if(!checker) cout << "0 ";
         }
-        cout << "\n";
+        cout << '\n';
     }
-}
+    cout << "------- map end ------\n";
+    return;
 
+}
 
 void init(){
     cin >> m >> t;
@@ -57,76 +60,70 @@ void init(){
     for(int i=0; i<m; i++){
         monster tmp;
         cin >> tmp.r >> tmp.c >> tmp.d;
-        tmp.d--;
-        tmp.r--;
-        tmp.c--;
+        tmp.r--; tmp.c--; tmp.d--;
         monsters.push_back(tmp);
     }
+
     return;
 }
 
-void copy_m(){
-    int original_size = monsters.size();
-    for(int i=0; i<original_size; i++){
-        monster& m = monsters[i];
-        if(m.is_egg || m.is_died || m.is_deleted) continue;
-        monster new_egg;
-        new_egg.r = m.r;
-        new_egg.c = m.c;
-        new_egg.d = m.d;
-        new_egg.is_egg = true;
-        monsters.push_back(new_egg);
+void copy_monster(){
+    int original_num = monsters.size();
+    for(int i=0; i<original_num; i++){
+        if(monsters[i].is_egg || monsters[i].is_deleted) continue;
+        monster tmp;
+        tmp.r = monsters[i].r;
+        tmp.c = monsters[i].c;
+        tmp.d = monsters[i].d;
+        tmp.is_egg = true;
+        monsters.push_back(tmp);
     }
+
+
     return;
 }
 
-void move_m(){
+void move_monster(){
     for(monster& m : monsters){
-        if(m.is_egg || m.is_died || m.is_deleted) continue;
+        if(m.is_deleted || m.is_egg) continue;
+
         int i = m.r;
         int j = m.c;
         int d = m.d;
-        for(int tt=0; tt<8; tt++){
+
+        for(int t=0; t<8; t++){
+            bool can_go = true;
             int ny = i + my[d];
             int nx = j + mx[d];
-            bool checker = true;
-            if(ny<0 || nx<0 || nx>=4 || ny>=4 || (ny == pr && nx == pc)){
-                checker = false;
-            }
 
-            else if(dead[ny][nx] > 0) checker = false;
-            
-            if(!checker){
+            if(ny<0 || nx<0 || ny>=4 || nx>=4 || dead[ny][nx] > 0) can_go = false;
+            else if(ny == pr && nx == pc) can_go = false;
+
+            if(!can_go){
                 d = (d+1) % 8;
                 continue;
             }
             else{
-                //cout << m.r << "," << m.c << " -> " << ny << "," << nx << '\n';
-                //cout << "direction " << m.d << "->" << d << '\n';
-                m.d = d;
                 m.r = ny;
                 m.c = nx;
-                break;
+                m.d = d;
             }
         }
-    }
 
+    }
     return;
 }
 
-void search_pmove(int ii, int jj, int cnt, int catched, int cost, vector<pair<int,int>> path){
+void search_path(int i, int j, int cnt, int catched, int cost){
 
     if(cnt == 3){
-        if(catched > max_catch){
-            max_catch = catched;
+        if(catched > best_catch){
+            best_catch = catched;
             best_cost = cost;
         }
-        else if(catched == max_catch){
+        else if(catched == best_catch){
             if(cost < best_cost){
-                // cout << best_cost << " vs " << cost << '\n';
-                // cout << cost << " : is best cost!\n";
-                // cout << catched << " : is best catched!\n";
-                max_catch = catched;
+                best_catch = catched;
                 best_cost = cost;
             }
         }
@@ -134,75 +131,66 @@ void search_pmove(int ii, int jj, int cnt, int catched, int cost, vector<pair<in
     }
 
     for(int d=0; d<4; d++){
-        int ny = ii + py[d];
-        int nx = jj + px[d];
-        if(ny<0 || nx<0 || nx>=4 || ny>=4) continue;
-        int catched_num = 0;
+        int ny = i + py[d];
+        int nx = j + px[d];
+        if(ny<0 || nx<0 || ny>=4 || nx>=4) continue;
+        int this_catch = cnt_map[ny][nx];
+        cnt_map[ny][nx] = 0;
 
-        bool past_path = false;
-        for(pair<int,int>& p : path){ //과거에 있었으면 캐치 넘 추가 안함
-            if(p.first == ny && p.second == nx){
-                past_path = true;
-            }
-        }
-        if(!past_path){
-            catched_num = cnt_map[ny][nx];
-        }
-        path.push_back({ny,nx});
-        //cout << ny << "," << nx << "search! >> " << catched_num << "\n";
-        search_pmove(ny, nx, cnt+1, catched + catched_num, cost*10 + d, path);
-        path.pop_back();
+        search_path(ny,nx, cnt+1, catched + this_catch, cost*10+d);
+        cnt_map[ny][nx] = this_catch;
     }
 
-    return;
+
+
 }
 
 
-void move_p(){
-    max_catch = 0;
-    best_cost = 999;
-    vector<pair<int,int>> path;
+void move_pacman(){
     memset(cnt_map, 0, sizeof(cnt_map));
 
-    for(auto& m : monsters){
-        if(!m.is_egg && !m.is_deleted && m.is_died == 0)
+    for(monster& m : monsters){ //미리 살아 있는 몬스터 개수 채워넣기
+        if(!m.is_deleted && !m.is_egg){
             cnt_map[m.r][m.c]++;
+        }
     }
+    best_catch = 0;
+    best_cost = 999;
+    search_path(pr,pc,0,0,0);
+    //cout << best_cost << '\n';
+    // 3 1 2
+    for(int ptr = 100; ptr>=1; ptr/=10){
+        //cout << "ptr : " << ptr << '\n';
+        int this_d = best_cost / ptr;
+        best_cost -= this_d * ptr;
 
-    search_pmove(pr, pc, 0, 0, 0, path);
-    //cout << best_cost << " best cost \n";
-    for(int ptr=100; ptr>=0; ptr/=10){
-        int this_move = best_cost / ptr;
-        //db_map();
-        pr = pr + py[this_move];
-        pc = pc + px[this_move];
-        //cout << pr <<","<< pc << " : move... \n";
+        pr = pr + py[this_d];
+        pc = pc + px[this_d];
+
         for(monster& m : monsters){
-            if(!m.is_egg && m.is_died==0 && !m.is_deleted){
+            if(!m.is_egg && !m.is_deleted){
                 if(m.r == pr && m.c == pc){
-                    //cout << "i die... \n";
-                    m.is_deleted = true;
+                    m.is_deleted = 1;
+                    m.r = -1;
+                    m.c = -1;
                     dead[pr][pc] = 3;
                 }
             }
         }
-        if(ptr==1) break;
-        best_cost -= this_move * ptr;
+
+
     }
     return;
 }
 
-void clean_dead_body(){
-
-    
+void clean_dead_monster(){
     for(int i=0; i<4; i++){
         for(int j=0; j<4; j++){
-            if(dead[i][j] > 0)
-                dead[i][j]--;
+            dead[i][j]--;
         }
     }
 
-    return;
+
 }
 
 void make_monster(){
@@ -212,49 +200,45 @@ void make_monster(){
         }
     }
     return;
-
 }
 
-int check_ret(){
+int check_alive_mosnter(){
     int ret = 0;
     for(monster& m : monsters){
-        if(!m.is_egg && m.is_died==0 && !m.is_deleted){
+        if(!m.is_egg && !m.is_deleted){
             ret++;
         }
     }
+
     return ret;
 }
 
 int main(){
+
     init();
-    // cout << "---- init complete ---\n";
-    //     db_map();
-    // cout << "--------------------\n";
+
     for(int turn=0; turn<t; turn++){
-        //cout << "------- turn" << turn <<" -----\n";
         //1. 몬스터 복제 시도
-        copy_m();
+        copy_monster();
+        //db_map();
+
         //2. 몬스터 이동
-        move_m();
-        // cout << "---- m complete ---\n";
-        // db_map();
-        // cout << "--------------------\n";
+        move_monster();
         //db_map();
-        //3. 팩맨 이동 - 백트래킹
-        move_p();
+
+        //3. 팩맨 이동
+        move_pacman();
         //db_map();
+
         //4. 몬스터 시체 소멸
-        clean_dead_body();
+        clean_dead_monster();
 
         //5. 몬스터 복제 완성
         make_monster();
-        // cout << "---- copy complete ---\n";
-        // db_map();
-        // cout << "--------------------\n";
+
     }
 
-    //db_map();
-    cout << check_ret();
-
-
+    cout << check_alive_mosnter();
+    
+    return 0;
 }
