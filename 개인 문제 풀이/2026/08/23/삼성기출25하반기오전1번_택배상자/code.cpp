@@ -15,28 +15,6 @@ int delete_cnt = 0;
 int db[51][51];
 
 
-void db_map(){
-    memset(db, 0 , sizeof(db));
-    
-    for(box& b : boxes){
-        cout << b.k << " : " << b.r << "," << b.c << '\n';
-        for(int i=b.r; i<b.r + b.h; i++){
-            for(int j=b.c; j<b.c+b.w; j++){
-                db[i][j] = b.k;
-            }
-        }
-    }
-
-    for(int i=n-1; i>=0; i--){
-        for(int j=1; j<=n; j++){
-            cout << db[i][j] << " ";
-        }
-        cout << '\n';
-    }
-
-}
-
-
 void init(){
     cin >> n >> m;
     for(int i=0; i<m; i++){
